@@ -1,7 +1,7 @@
 {
   "name": "starterkits",
   "version": "1.0.0",
-  "description": "< Добавьте описание проекта в свободной форме >",
+  "description": "API for project Mesto",
   "main": "dist/app.js",
   "scripts": {
     "lint": "npx eslint src/**/*.ts",
@@ -10,7 +10,7 @@
     "start": "ts-node src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "< Укажите здесь автора работы >",
+  "author": "Begunov Vlad",
   "license": "ISC",
   "devDependencies": {
     "@types/express": "^4.17.13",
