@@ -1,35 +1,99 @@
 //@ts-nocheck
 
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction, response } from "express";
 import { User } from "../models";
 
 const router = Router();
 
-router.get("/", async (req: Request, res: Response) => {
-  const users = await User.find({});
-  res.send(users);
+router.get("/", (req: Request, res: Response, next: Next) => {
+  User.find({}).then((result) => (result.length ? res.send(result) : next({})));
 });
 
-router.get("/:userId", async (req: Request, res: Response) => {
-  const result = await User.findById(req.params.userId);
-  res.send(result);
+router.get("/:userId", (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.params.userId)
+    .then((result) =>
+      result
+        ? res.send(result)
+        : next({
+            message: "Пользователь по указанному _id не найден",
+            status: 404,
+          })
+    )
+    .catch((err) => next({}));
 });
 
-router.post("/", async (req: Request, res: Response) => {
-  const user = await User.create(req.body);
-  res.send(user);
+router.post("/", (req: Request, res: Response, next: NextFunction) => {
+  User.create(req.body)
+    .then((result) => res.send(result))
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        next({
+          message: "Переданы некорректные данные при создании пользователя",
+          status: 400,
+        });
+      } else {
+        next({});
+      }
+    });
 });
 
-router.patch("/me", async (req: Request, res: Response) => {
+router.patch("/me", (req: Request, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
-  const user = await User.find({ _id: req.user._id }).update({ name, about });
-  res.send(user);
+
+  User.findByIdAndUpdate(
+    req.user._id,
+    { name, about },
+    { runValidators: true, new: true }
+  )
+    .then((result) =>
+      result
+        ? res.send(result)
+        : next({
+            message: "Пользователь с указанным _id не найден",
+            status: 404,
+          })
+    )
+    .catch((err) => {
+      if (err.name === "CastError" || err.name === "ValidationError") {
+        next({
+          message: "Переданы некорректные данные при обновлении профиля",
+          status: 400,
+        });
+      } else {
+        next({});
+      }
+    });
 });
 
-router.patch("/me/avatar", async (req: Request, res: Response) => {
-  const { avatar } = req.body;
-  const user = await User.find({ _id: req.user._id }).update({ avatar });
-  res.send(user);
-});
+router.patch(
+  "/me/avatar",
+  (req: Request, res: Response, next: NextFunction) => {
+    const { avatar } = req.body;
+
+    User.findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      { runValidators: true, new: true }
+    )
+      .then((result) =>
+        result
+          ? res.send(result)
+          : next({
+              message: "Пользователь с указанным _id не найден",
+              status: 404,
+            })
+      )
+      .catch((err) => {
+        if (err.name === "ValidationError") {
+          next({
+            message: "Переданы некорректные данные при обновлении аватара",
+            status: 400,
+          });
+        } else {
+          next({});
+        }
+      });
+  }
+);
 
 export default router;
