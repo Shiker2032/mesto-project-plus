@@ -1,15 +1,16 @@
-//@ts-nocheck
-
-import { Router, Request, Response, NextFunction, response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { IRequest } from "types";
 import { User } from "../models";
 
-const router = Router();
-
-router.get("/", (req: Request, res: Response, next: Next) => {
+export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({}).then((result) => (result.length ? res.send(result) : next({})));
-});
+};
 
-router.get("/:userId", (req: Request, res: Response, next: NextFunction) => {
+export const getUserById = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   User.findById(req.params.userId)
     .then((result) =>
       result
@@ -20,9 +21,9 @@ router.get("/:userId", (req: Request, res: Response, next: NextFunction) => {
           })
     )
     .catch((err) => next({}));
-});
+};
 
-router.post("/", (req: Request, res: Response, next: NextFunction) => {
+export const createUser = (req: Request, res: Response, next: NextFunction) => {
   User.create(req.body)
     .then((result) => res.send(result))
     .catch((err) => {
@@ -35,13 +36,17 @@ router.post("/", (req: Request, res: Response, next: NextFunction) => {
         next({});
       }
     });
-});
+};
 
-router.patch("/me", (req: Request, res: Response, next: NextFunction) => {
+export const updateUser = (
+  req: IRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(
-    req.user._id,
+    req.user?._id,
     { name, about },
     { runValidators: true, new: true }
   )
@@ -63,37 +68,36 @@ router.patch("/me", (req: Request, res: Response, next: NextFunction) => {
         next({});
       }
     });
-});
+};
 
-router.patch(
-  "/me/avatar",
-  (req: Request, res: Response, next: NextFunction) => {
-    const { avatar } = req.body;
+export const updateUserAvatar = (
+  req: IRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const { avatar } = req.body;
 
-    User.findByIdAndUpdate(
-      req.user._id,
-      { avatar },
-      { runValidators: true, new: true }
+  User.findByIdAndUpdate(
+    req.user?._id,
+    { avatar },
+    { runValidators: true, new: true }
+  )
+    .then((result) =>
+      result
+        ? res.send(result)
+        : next({
+            message: "Пользователь с указанным _id не найден",
+            status: 404,
+          })
     )
-      .then((result) =>
-        result
-          ? res.send(result)
-          : next({
-              message: "Пользователь с указанным _id не найден",
-              status: 404,
-            })
-      )
-      .catch((err) => {
-        if (err.name === "ValidationError") {
-          next({
-            message: "Переданы некорректные данные при обновлении аватара",
-            status: 400,
-          });
-        } else {
-          next({});
-        }
-      });
-  }
-);
-
-export default router;
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        next({
+          message: "Переданы некорректные данные при обновлении аватара",
+          status: 400,
+        });
+      } else {
+        next({});
+      }
+    });
+};
