@@ -7,7 +7,7 @@ const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  const { message = "Внтуренняя ошибка", status } = err;
+  const { message = "На сервере произошла ошибка", status } = err;
   res.status(status ? status : 500).send({ message: message });
 };
 
