@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { IRequest } from '../types';
-import { User } from '../models';
+import { Request, Response, NextFunction } from "express";
+import { IRequest } from "../types";
+import { User } from "../models";
+import bcrypt from "bcrypt";
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({}).then((result) => (result.length ? res.send(result) : next({})));
@@ -9,28 +10,35 @@ export const getUsers = (req: Request, res: Response, next: NextFunction) => {
 export const getUserById = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   User.findById(req.params.userId)
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Пользователь по указанному _id не найден',
-        status: 404,
-      })))
+    .then((result) =>
+      result
+        ? res.send(result)
+        : next({
+            message: "Пользователь по указанному _id не найден",
+            status: 404,
+          })
+    )
     .catch(() => next({}));
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
-  User.create(req.body)
-    .then((result) => res.send(result))
+  bcrypt
+    .genSalt(10)
+    .then((salt) => bcrypt.hash(req.body.password, salt))
+    .then((hashed) => User.create({ ...req.body, password: hashed }))
+    .then((user) => res.send(user))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      console.log(err.message);
+      if (err.name === "ValidationError") {
         next({
-          message: 'Переданы некорректные данные при создании пользователя',
+          message: "Переданы некорректные данные при создании пользователя",
           status: 400,
         });
       } else {
+        console.log(err.message);
         next({});
       }
     });
@@ -39,25 +47,27 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
 export const updateUser = (
   req: IRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(
     req.user?._id,
     { name, about },
-    { runValidators: true, new: true },
+    { runValidators: true, new: true }
   )
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Пользователь с указанным _id не найден',
-        status: 404,
-      })))
+    .then((result) =>
+      result
+        ? res.send(result)
+        : next({
+            message: "Пользователь с указанным _id не найден",
+            status: 404,
+          })
+    )
     .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
+      if (err.name === "CastError" || err.name === "ValidationError") {
         next({
-          message: 'Переданы некорректные данные при обновлении профиля',
+          message: "Переданы некорректные данные при обновлении профиля",
           status: 400,
         });
       } else {
@@ -69,29 +79,40 @@ export const updateUser = (
 export const updateUserAvatar = (
   req: IRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(
     req.user?._id,
     { avatar },
-    { runValidators: true, new: true },
+    { runValidators: true, new: true }
   )
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Пользователь с указанным _id не найден',
-        status: 404,
-      })))
+    .then((result) =>
+      result
+        ? res.send(result)
+        : next({
+            message: "Пользователь с указанным _id не найден",
+            status: 404,
+          })
+    )
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.name === "ValidationError") {
         next({
-          message: 'Переданы некорректные данные при обновлении аватара',
+          message: "Переданы некорректные данные при обновлении аватара",
           status: 400,
         });
       } else {
         next({});
       }
     });
+};
+
+export const loginUser = (req: IRequest, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  User.findOne({ email: req.body.email }).then((user) => {
+    bcrypt
+      .compare(password, user!.password)
+      .then((compared) => res.send(compared));
+  });
 };
