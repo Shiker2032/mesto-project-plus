@@ -1,4 +1,5 @@
 import { NextFunction, Request } from "express";
+import { JwtPayload } from "jsonwebtoken";
 import mongoose from "mongoose";
 
 interface IRequest extends Request {
@@ -26,4 +27,8 @@ interface IUserModel extends mongoose.Model<IUser> {
   ) => Promise<mongoose.Document<unknown, any, IUser>>;
 }
 
-export { IRequest, IError, IUser, IUserModel };
+interface ISessionRequest extends Request {
+  user?: string | JwtPayload;
+}
+
+export { IRequest, IError, IUser, IUserModel, ISessionRequest };

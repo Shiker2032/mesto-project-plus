@@ -12,12 +12,12 @@ const { PORT = 3000 } = process.env;
 const app = express();
 
 app.use(express.json());
-app.use((req: IRequest, res: Response, next: NextFunction) => {
-  req.user = {
-    _id: "639c672c9f80ab4f6e5ac861",
-  };
-  next();
-});
+// app.use((req: IRequest, res: Response, next: NextFunction) => {
+//   req.user = {
+//     _id: "639c672c9f80ab4f6e5ac861",
+//   };
+//   next();
+// });
 
 app.use("/users", usersRouter);
 app.use(authHandler);

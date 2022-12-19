@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { IRequest } from "../types";
 import { User } from "../models";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({}).then((result) => (result.length ? res.send(result) : next({})));
@@ -115,5 +116,10 @@ export const loginUser = async (
 ) => {
   const { email, password } = req.body;
   const user = await User.findUserByCredentials(email, password, next);
-  if (user) res.send(user);
+  if (user) {
+    const token = jwt.sign({ _id: user._id }, "top-secret-key", {
+      expiresIn: "7d",
+    });
+    res.send(token);
+  }
 };
