@@ -1,8 +1,11 @@
 import { Schema } from "mongoose";
 import urlRegex from "../utils";
 import validator from "validator";
+import { IUser, IUserModel } from "types";
+import bcrypt from "bcrypt";
+import { NextFunction } from "express";
 
-const UserSchema = new Schema({
+const UserSchema = new Schema<IUser, IUserModel>({
   email: {
     type: String,
     validate: {
@@ -36,5 +39,21 @@ const UserSchema = new Schema({
       "https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png",
   },
 });
+
+UserSchema.statics.findUserByCredentials = async function (
+  email: string,
+  password: string,
+  next: NextFunction
+) {
+  const user = await this.findOne({ email });
+  if (!user) {
+    return next({ message: "Неправильные почта или пароль", status: 400 });
+  }
+  const matched = await bcrypt.compare(password, user.password);
+  if (!matched) {
+    return next({ message: "Неправильные почта или пароль", status: 400 });
+  }
+  return user;
+};
 
 export default UserSchema;

@@ -108,11 +108,12 @@ export const updateUserAvatar = (
     });
 };
 
-export const loginUser = (req: IRequest, res: Response, next: NextFunction) => {
+export const loginUser = async (
+  req: IRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { email, password } = req.body;
-  User.findOne({ email: req.body.email }).then((user) => {
-    bcrypt
-      .compare(password, user!.password)
-      .then((compared) => res.send(compared));
-  });
+  const user = await User.findUserByCredentials(email, password, next);
+  if (user) res.send(user);
 };
