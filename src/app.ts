@@ -8,6 +8,8 @@ import { createUser, loginUser } from "./controllers/users";
 import { errors } from "celebrate";
 import { celebrate, Joi } from "celebrate";
 
+import { errorLogger, requestLogger } from "./middleware/logger";
+
 mongoose.connect("mongodb://127.0.0.1:27017/mestodb");
 
 const { PORT = 3000 } = process.env;
@@ -32,12 +34,16 @@ const loginUserValidator = celebrate({
   }),
 });
 
+app.use(requestLogger);
+
 app.post("/signup", createUserValidator, createUser);
 app.post("/login", loginUserValidator, loginUser);
 
 app.use(authHandler);
 app.use("/users", usersRouter);
 app.use("/cards", cardsRouter);
+
+app.use(errorLogger);
 app.use(errors());
 app.use(errorHandler);
 
