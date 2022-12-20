@@ -27,19 +27,30 @@ export const createCard = (
     });
 };
 
-export const deleteCard = (
+export const deleteCard = async (
   req: IRequest,
   res: Response,
   next: NextFunction,
 ) => {
-  Card.findOneAndDelete(
-    { _id: req.params.cardId, owner: req.user?._id },
-    { runValidators: true, new: true },
-  )
-    .then((result) => (result
-      ? res.send(result)
-      : next({ message: 'Карточка с указанным _id не найдена' })))
-    .catch(() => next({}));
+  try {
+    const card = await Card.findOne({ _id: req.params.cardId });
+    if (!card) {
+      return next({
+        message: 'Карточка с указанным _id не найдена',
+        status: 400,
+      });
+    }
+    if (card.owner?.valueOf() !== req.user?._id) {
+      return next({
+        message: 'Вы не можете удалить чужую карточку',
+        status: 400,
+      });
+    }
+    const deletedCard = await Card.findByIdAndDelete(req.params.cardId);
+    return res.send({ message: 'Карточка удалена успешно', data: deletedCard });
+  } catch (err) {
+    return next({});
+  }
 };
 
 export const putCardLike = (

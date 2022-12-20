@@ -1,9 +1,17 @@
-import express, { NextFunction, Response } from 'express';
+import express from 'express';
 import mongoose from 'mongoose';
-import { IRequest } from './types';
+import { errors } from 'celebrate';
 import usersRouter from './router/users';
 import cardsRouter from './router/cards';
-import errorHandler from './middleware/errorHandler';
+import errorHandler from './middlewares/errorHandler';
+import authHandler from './middlewares/auth';
+import { createUser, loginUser } from './controllers/users';
+
+import { errorLogger, requestLogger } from './middlewares/logger';
+import {
+  createUserValidator,
+  loginUserValidator,
+} from './middlewares/validators';
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
 
@@ -11,15 +19,18 @@ const { PORT = 3000 } = process.env;
 const app = express();
 
 app.use(express.json());
-app.use((req: IRequest, res: Response, next: NextFunction) => {
-  req.user = {
-    _id: '63987f351ae1a5c53f5a453f',
-  };
-  next();
-});
 
+app.use(requestLogger);
+
+app.post('/signup', createUserValidator, createUser);
+app.post('/signin', loginUserValidator, loginUser);
+
+app.use(authHandler);
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
+
+app.use(errorLogger);
+app.use(errors());
 app.use(errorHandler);
 
 app.listen(PORT, () => {
