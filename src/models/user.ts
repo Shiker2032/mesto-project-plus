@@ -1,9 +1,9 @@
-import { Schema } from "mongoose";
-import urlRegex from "../utils";
-import validator from "validator";
-import { IUser, IUserModel } from "types";
-import bcrypt from "bcrypt";
-import { NextFunction } from "express";
+import { Schema } from 'mongoose';
+import validator from 'validator';
+import bcrypt from 'bcrypt';
+import { NextFunction } from 'express';
+import { IUser, IUserModel } from '../types';
+import urlRegex from '../utils/utils';
 
 const UserSchema = new Schema<IUser, IUserModel>({
   email: {
@@ -23,13 +23,13 @@ const UserSchema = new Schema<IUser, IUserModel>({
     type: String,
     minLength: 2,
     maxLength: 30,
-    default: "Жак-Ив Кусто",
+    default: 'Жак-Ив Кусто',
   },
   about: {
     type: String,
     minLength: 2,
     maxLength: 30,
-    default: "Исследователь",
+    default: 'Исследователь',
   },
   avatar: {
     type: String,
@@ -37,22 +37,22 @@ const UserSchema = new Schema<IUser, IUserModel>({
       validator: (value: string) => urlRegex.test(value),
     },
     default:
-      "https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png",
+      'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
 });
 
 UserSchema.statics.findUserByCredentials = async function (
   email: string,
   password: string,
-  next: NextFunction
+  next: NextFunction,
 ) {
-  const user = await this.findOne({ email }).select("+password");
+  const user = await this.findOne({ email }).select('+password');
   if (!user) {
-    return next({ message: "Неправильные почта или пароль", status: 400 });
+    return next({ message: 'Неправильные почта или пароль', status: 400 });
   }
   const matched = await bcrypt.compare(password, user.password);
   if (!matched) {
-    return next({ message: "Неправильные почта или пароль", status: 400 });
+    return next({ message: 'Неправильные почта или пароль', status: 400 });
   }
   return user;
 };

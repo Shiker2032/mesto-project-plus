@@ -1,6 +1,6 @@
-import { NextFunction, Request } from "express";
-import { JwtPayload } from "jsonwebtoken";
-import mongoose from "mongoose";
+import { NextFunction, Request } from 'express';
+import { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
 interface IRequest extends Request {
   user?: { _id: string };
@@ -31,4 +31,6 @@ interface ISessionRequest extends Request {
   user?: string | JwtPayload;
 }
 
-export { IRequest, IError, IUser, IUserModel, ISessionRequest };
+export {
+  IRequest, IError, IUser, IUserModel, ISessionRequest,
+};

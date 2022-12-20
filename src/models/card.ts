@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import urlRegex from '../utils';
+import urlRegex from '../utils/utils';
 
 const CardSchema = new Schema({
   name: {
