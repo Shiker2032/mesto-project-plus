@@ -17,6 +17,7 @@ const UserSchema = new Schema<IUser, IUserModel>({
   password: {
     type: String,
     required: true,
+    select: false,
   },
   name: {
     type: String,
@@ -45,7 +46,7 @@ UserSchema.statics.findUserByCredentials = async function (
   password: string,
   next: NextFunction
 ) {
-  const user = await this.findOne({ email });
+  const user = await this.findOne({ email }).select("+password");
   if (!user) {
     return next({ message: "Неправильные почта или пароль", status: 400 });
   }

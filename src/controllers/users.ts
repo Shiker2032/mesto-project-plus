@@ -123,3 +123,14 @@ export const loginUser = async (
     res.send(token);
   }
 };
+export const userProfile = async (
+  req: IRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  User.findOne({ _id: req.user?._id })
+    .then((user) => res.send(user))
+    .catch((err) => {
+      next({});
+    });
+};
