@@ -1,9 +1,9 @@
 import { Schema } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcrypt';
-import { NextFunction } from 'express';
 import { IUser, IUserModel } from '../types';
 import urlRegex from '../utils/utils';
+import BadRequestError from '../errors/bad-req-err';
 
 const UserSchema = new Schema<IUser, IUserModel>({
   email: {
@@ -12,7 +12,7 @@ const UserSchema = new Schema<IUser, IUserModel>({
       validator: (v: string) => validator.isEmail(v),
     },
     required: true,
-    // unique: true,
+    unique: true,
   },
   password: {
     type: String,
@@ -44,15 +44,14 @@ const UserSchema = new Schema<IUser, IUserModel>({
 UserSchema.statics.findUserByCredentials = async function (
   email: string,
   password: string,
-  next: NextFunction,
 ) {
   const user = await this.findOne({ email }).select('+password');
   if (!user) {
-    return next({ message: 'Неправильные почта или пароль', status: 400 });
+    throw new BadRequestError('Неправильные почта или пароль');
   }
   const matched = await bcrypt.compare(password, user.password);
   if (!matched) {
-    return next({ message: 'Неправильные почта или пароль', status: 400 });
+    throw new BadRequestError('Неправильные почта или пароль');
   }
   return user;
 };

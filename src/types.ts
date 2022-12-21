@@ -8,7 +8,7 @@ interface IRequest extends Request {
 
 interface IError {
   message: string;
-  status: number;
+  statusCode: number;
 }
 
 interface IUser {

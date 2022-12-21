@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { IRequest } from '../types';
 import { Card } from '../models';
+import BadRequestError from '../errors/bad-req-err';
+import NotFoundError from '../errors/not-found-err';
+import ForbiddenError from '../errors/forbidden-err';
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
     .then((result) => (result.length ? res.send(result) : next({})))
-    .catch(() => next({}));
+    .catch((err) => next(err));
 };
 
 export const createCard = (
@@ -17,13 +20,9 @@ export const createCard = (
     .then((result) => res.send(result))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next({
-          message: 'Переданы некорректные данные при создании карточки',
-          status: 400,
-        });
-      } else {
-        next({});
+        return next(new BadRequestError('Переданы некорректные данные при создании карточки'));
       }
+      return next(err);
     });
 };
 
@@ -35,21 +34,15 @@ export const deleteCard = async (
   try {
     const card = await Card.findOne({ _id: req.params.cardId });
     if (!card) {
-      return next({
-        message: 'Карточка с указанным _id не найдена',
-        status: 400,
-      });
+      throw new NotFoundError('Карточка с указанным _id не найдена');
     }
     if (card.owner?.valueOf() !== req.user?._id) {
-      return next({
-        message: 'Вы не можете удалить чужую карточку',
-        status: 400,
-      });
+      throw new ForbiddenError('Вы не можете удалить чужую карточку');
     }
     const deletedCard = await Card.findByIdAndDelete(req.params.cardId);
     return res.send({ message: 'Карточка удалена успешно', data: deletedCard });
   } catch (err) {
-    return next({});
+    return next(err);
   }
 };
 
@@ -63,13 +56,13 @@ export const putCardLike = (
     { $addToSet: { likes: req.user?._id } },
     { runValidators: true, new: true },
   )
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Передан несуществующий _id карточки.',
-        status: 400,
-      })))
-    .catch(() => next({}));
+    .then((result) => {
+      if (!result) {
+        throw new NotFoundError('Карточка с указанным _id не найдена');
+      }
+      res.send(result);
+    })
+    .catch((err) => next(err));
 };
 
 export const removeCardLike = (
@@ -81,7 +74,10 @@ export const removeCardLike = (
     req.params.cardId,
     { $pull: { likes: req.user?._id } },
     { new: true },
-  ).then((result) => (result
-    ? res.send(result)
-    : next({ message: 'Карточка с указанным _id не найдена', status: 404 })));
+  ).then((result) => {
+    if (!result) {
+      throw new NotFoundError('Карточка с указанным _id не найдена');
+    }
+    res.send(result);
+  }).catch((err) => next(err));
 };

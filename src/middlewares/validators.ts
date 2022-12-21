@@ -30,7 +30,7 @@ export const createCardValidator = celebrate({
 
 export const cardIdValidator = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().alphanum().length(24).required(),
+    cardId: Joi.string().hex().length(24).required(),
   }),
 });
 
@@ -38,7 +38,7 @@ export const cardIdValidator = celebrate({
 
 export const getUserByIdValidator = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().alphanum().length(24).required(),
+    userId: Joi.string().hex().length(24).required(),
   }),
 });
 
