@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import UnathorizedError from '../errors/unathorised-err';
+import UnathorizedError from '../errors/unathorized-err';
 import { ISessionRequest } from '../types';
 
 const handleAuthError = () => {
