@@ -1,9 +1,10 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import UnathorizedError from '../errors/unathorised-err';
 import { ISessionRequest } from '../types';
 
-const handleAuthError = (res: Response) => {
-  res.status(401).send({ message: 'Ошибка авторизации' });
+const handleAuthError = () => {
+  throw new UnathorizedError('Ошибка авторизации');
 };
 
 const extractBearerToken = (token: string) => token.replace('Bearer ', '');
@@ -12,7 +13,7 @@ export default (req: ISessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return handleAuthError(res);
+    return handleAuthError();
   }
 
   const token = extractBearerToken(authorization);
@@ -21,7 +22,7 @@ export default (req: ISessionRequest, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, 'top-secret-key');
   } catch (err) {
-    return handleAuthError(res);
+    return handleAuthError();
   }
 
   req.user = payload;

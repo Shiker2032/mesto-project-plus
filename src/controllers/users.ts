@@ -3,9 +3,14 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { IRequest } from '../types';
 import { User } from '../models';
+import BadRequestError from '../errors/bad-req-err';
+import NotFoundError from '../errors/not-found-err';
+import ConflictError from '../errors/conflict-err';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
-  User.find({}).then((result) => (result.length ? res.send(result) : next({})));
+  User.find({})
+    .then((result) => (result.length ? res.send(result) : next({})))
+    .catch((err) => next(err));
 };
 
 export const getUserById = (
@@ -14,13 +19,13 @@ export const getUserById = (
   next: NextFunction,
 ) => {
   User.findById(req.params.userId)
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Пользователь по указанному _id не найден',
-        status: 404,
-      })))
-    .catch(() => next({}));
+    .then((result) => {
+      if (!result) {
+        throw new NotFoundError('Пользователь по указанному _id не найден');
+      }
+      res.send(result);
+    })
+    .catch((err) => next(err));
 };
 
 export const createUser = (req: Request, res: Response, next: NextFunction) => {
@@ -28,21 +33,21 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
     .genSalt(10)
     .then((salt) => bcrypt.hash(req.body.password, salt))
     .then((hashed) => User.create({ ...req.body, password: hashed }))
-    .then((user) => res.send(user))
+    .then((user) => {
+      const {
+        email, name, about, avatar,
+      } = user;
+      res.send({
+        email, name, about, avatar,
+      });
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next({
-          message: 'Переданы некорректные данные при создании пользователя',
-          status: 400,
-        });
-      } else if (err.code === 11000) {
-        next({
-          message: 'Пользователь с такой почтой уже зарегистрирован',
-          status: 400,
-        });
-      } else {
-        next({});
+        return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
+      } if (err.code === 11000) {
+        return next(new ConflictError('Пользователь с такой почтой уже зарегистрирован'));
       }
+      return next(err);
     });
 };
 
@@ -58,21 +63,16 @@ export const updateUser = (
     { name, about },
     { runValidators: true, new: true },
   )
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Пользователь с указанным _id не найден',
-        status: 404,
-      })))
+    .then((result) => {
+      if (!result) {
+        throw new NotFoundError('Пользователь с указанным _id не найден');
+      }
+    })
     .catch((err) => {
       if (err.name === 'CastError' || err.name === 'ValidationError') {
-        next({
-          message: 'Переданы некорректные данные при обновлении профиля',
-          status: 400,
-        });
-      } else {
-        next({});
+        return next(new BadRequestError('Переданы некорректные данные при обновлении профиля'));
       }
+      return next(err);
     });
 };
 
@@ -88,21 +88,17 @@ export const updateUserAvatar = (
     { avatar },
     { runValidators: true, new: true },
   )
-    .then((result) => (result
-      ? res.send(result)
-      : next({
-        message: 'Пользователь с указанным _id не найден',
-        status: 404,
-      })))
+    .then((result) => {
+      if (!result) {
+        throw new NotFoundError('Пользователь с указанным _id не найден');
+      }
+      res.send(result);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next({
-          message: 'Переданы некорректные данные при обновлении аватара',
-          status: 400,
-        });
-      } else {
-        next({});
+        return next(new BadRequestError('Переданы некорректные данные при обновлении аватара'));
       }
+      return next(err);
     });
 };
 
@@ -112,12 +108,16 @@ export const loginUser = async (
   next: NextFunction,
 ) => {
   const { email, password } = req.body;
-  const user = await User.findUserByCredentials(email, password, next);
-  if (user) {
-    const token = jwt.sign({ _id: user._id }, 'top-secret-key', {
-      expiresIn: '7d',
-    });
-    res.send(token);
+  try {
+    const user = await User.findUserByCredentials(email, password, next);
+    if (user) {
+      const token = jwt.sign({ _id: user._id }, 'top-secret-key', {
+        expiresIn: '7d',
+      });
+      res.send({ token });
+    }
+  } catch (err) {
+    next(err);
   }
 };
 export const userProfile = async (
@@ -127,13 +127,12 @@ export const userProfile = async (
 ) => {
   User.findOne({ _id: req.user?._id })
     .then((user) => {
-      if (user) {
-        res.send(user);
-      } else {
-        next({ message: 'Пользователь не найден', status: 400 });
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
       }
+      res.send(user);
     })
     .catch((err) => {
-      next({});
+      next(err);
     });
 };
